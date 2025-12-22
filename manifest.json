@@ -1,0 +1,8 @@
+{
+  "name": "Charades (Ursina CSS)",
+  "short_name": "Charades",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#12151b",
+  "theme_color": "#12151b"
+}
