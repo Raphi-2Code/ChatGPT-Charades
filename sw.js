@@ -1,4 +1,4 @@
-const CACHE_NAME = "ursina-charades-v22";
+const CACHE_NAME = "ursina-charades-v23";
 
 // ASSET_LIST_START
 const ASSETS = [
