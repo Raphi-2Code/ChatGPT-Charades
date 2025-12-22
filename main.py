@@ -1042,7 +1042,7 @@ class CharadesApp:
             self.header_score_text = None
             self.txt(f"Team {team_i+1}  •  Round {round_no}/{self.rounds_per_team}", y=header_y, s=1.25, c=BLACK)
 
-        pause_x = (l.left + 0.16) if HAS_BRYTHON_TIMER else (l.right - 0.10)
+        pause_x = (l.left + 0.10) if HAS_BRYTHON_TIMER else (l.right - 0.10)
         pause_y = header_y
         self.btn_pause = self.btn("Pause", pause_x, pause_y, self.toggle_pause, w=0.18, h=0.07, bg=self.C_BTN_DARK, fg=WHITE)
 
