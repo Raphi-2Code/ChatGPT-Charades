@@ -498,6 +498,7 @@ class CharadesApp:
 
         # Word bank
         self.word_bank = self._make_word_bank()
+        self.word_bank_de = self._make_word_bank_de()
         self.selected_categories = set(self.word_bank.keys())
         self.selector = WordSelector(self.word_bank)
         self.selector.set_categories(list(self.selected_categories))
@@ -599,6 +600,14 @@ class CharadesApp:
 
         return s
 
+    def _active_word_bank(self):
+        """Return the word bank matching the current UI language."""
+        if getattr(self, 'language', 'en') == 'de':
+            b = getattr(self, 'word_bank_de', None)
+            if isinstance(b, dict) and b:
+                return b
+        return getattr(self, 'word_bank', {})
+
     def _make_word_bank(self):
         return {
             "Classic": [
@@ -649,6 +658,59 @@ class CharadesApp:
                 "catching a bus", "reading a map", "tying shoelaces", "taking a selfie", "rowing a boat",
                 "climbing a ladder", "playing the violin", "dribbling a basketball", "walking a dog", "painting a wall",
                 "balancing on one foot", "pretending to be a robot", "inflating a balloon", "stirring soup", "shivering from cold",
+            ],
+        }
+
+    def _make_word_bank_de(self):
+        return {
+            "Classic": [
+                "luftgitarre", "bananenschale", "lagerfeuer", "schneeballschlacht", "geburtstagsparty",
+                "gehirnfrost", "aufzug", "jonglieren", "pirat", "geist",
+                "zombiegang", "hula-hoop", "eislaufen", "spaghetti schlürfen", "auf stelzen laufen",
+                "clown", "cowboy", "dinosaurier", "feuerwerk", "kitzelmonster",
+                "kissenschlacht", "papierflugzeug", "drachen steigen lassen", "geschenk auspacken", "high five",
+            ],
+            "Cringe": [
+                "antwort-an-alle-katastrophe", "mikro nicht stumm", "kamera an im pyjama", "autokorrektur-fail", "peinlicher high five",
+                "influencer-entschuldigung", "video puffert", "tippen und dann verschwinden", "versehentlicher taschenanruf", "falscher gruppenchat",
+                "dir auch sagen", "doppelt schreiben", "jemandes namen vergessen", "schlechter wortwitz", "papa-tanz",
+                "über den eigenen witz lachen", "kaffee verschütten", "stimmenbruch", "bei falscher person winken", "tür zu lange aufhalten",
+                "über nichts stolpern", "zoom-filter-fehler", "posten und löschen", "nachricht laut vorlesen", "schlechter händedruck",
+            ],
+            "Animals": [
+                "pinguin", "giraffe", "oktopus", "faultier", "hamster",
+                "goldfisch", "panda", "känguru", "flamingo", "schildkröte",
+                "delfin", "eule", "schmetterling", "krokodil", "zebra",
+                "elefant", "affe", "katze", "hund", "biene",
+                "schlange", "frosch", "robbe", "pfau", "igel",
+            ],
+            "Movies/TV": [
+                "superhelden-landung", "plot twist", "weltraumabenteuer", "piratenschiff", "detektivfall",
+                "zauberschule", "roboter-sidekick", "zeitreise", "alieninvasion", "gameshow-moderator",
+                "kochshow-wettbewerb", "tanzfinale", "autoverfolgungsjagd", "romantische komödie", "animiertes musical",
+                "nachrichtensprecher", "sportkommentator", "geheimagent", "superschurkenlachen", "dramatischer gerichtssaal",
+                "monster unterm bett", "cliffhanger-ende", "lachspur", "mystery-box", "trainingsmontage",
+            ],
+            "Professions": [
+                "feuerwehrmann", "lehrer", "pfleger", "koch", "pilot",
+                "astronaut", "postbote", "fotograf", "mechaniker", "wissenschaftler",
+                "künstler", "zahnarzt", "bademeister", "friseur", "architekt",
+                "softwareentwickler", "gärtner", "polizist", "busfahrer", "bauer",
+                "tierarzt", "reporter", "tischler", "zoo-wärter", "trainer",
+            ],
+            "Everyday Objects": [
+                "regenschirm", "einkaufswagen", "zahnbürste", "kaffeebecher", "fernbedienung",
+                "sonnenbrille", "rucksack", "wecker", "gummiente", "teddybär",
+                "taschenlampe", "wasserflasche", "schlüsselbund", "haftnotiz", "decke",
+                "kissen", "brotbox", "fußball", "pinsel", "haarbürste",
+                "klebebandabroller", "türklingel", "staubsauger", "kopfhörer", "geldbeutel",
+            ],
+            "Actions": [
+                "zähne putzen", "geschirr spülen", "den moonwalk machen", "seilspringen", "seifenblasen pusten",
+                "sandburg bauen", "leise schleichen", "auf zehenspitzen gehen", "ein festsitzendes glas öffnen", "kekse backen",
+                "einen bus erwischen", "eine karte lesen", "schnürsenkel binden", "ein selfie machen", "ein boot rudern",
+                "eine leiter hochklettern", "geige spielen", "basketball dribbeln", "einen hund ausführen", "eine wand streichen",
+                "auf einem bein balancieren", "so tun, als wärst du ein roboter", "einen ballon aufblasen", "suppe umrühren", "vor kälte zittern",
             ],
         }
 
@@ -863,6 +925,18 @@ class CharadesApp:
         self.quad(0, 0, 1.18, 0.70, self.C_PANEL, z=0.03)
         self.txt("Settings", y=0.30, s=2.0, c=self.C_PRIMARY)
 
+        def toggle_lang():
+            self.language = 'de' if self.language != 'de' else 'en'
+            try:
+                self.selector.bank = self._active_word_bank()
+            except Exception:
+                pass
+            self.go(self.STATE_SETTINGS)
+
+        # ✅ moved ABOVE pass penalty
+        self.btn("English / Deutsch", 0, 0.20, toggle_lang, w=0.90, h=0.11,
+                 bg=self.C_BTN_DARK, fg=WHITE)
+
         pass_label = "Pass penalty: OFF (0)" if self.pass_penalty == 0 else "Pass penalty: ON (-1)"
         auto_label = "Auto-next word: ON" if self.auto_next_word else "Auto-next word: OFF"
 
@@ -881,14 +955,6 @@ class CharadesApp:
         self.btn(auto_label, 0, -0.08, toggle_auto, w=0.90, h=0.11,
                  bg=self.C_PRIMARY if self.auto_next_word else self.C_BTN_DARK,
                  fg=BLACK if self.auto_next_word else WHITE)
-
-        def toggle_lang():
-            self.language = 'de' if self.language != 'de' else 'en'
-            self.go(self.STATE_SETTINGS)
-
-        lang_label = "Deutsch" if self.language != 'de' else "English"
-        self.btn(lang_label, 0, -0.16, toggle_lang, w=0.90, h=0.11,
-                 bg=self.C_BTN_DARK, fg=WHITE)
 
         self.btn("Back", 0, -0.28, lambda: self.go(self.STATE_MENU), bg=self.C_BTN_DARK, fg=WHITE)
 
@@ -997,8 +1063,10 @@ class CharadesApp:
             self.btn(name, x, y, on_click=lambda n=name: toggle_cat(n), w=btn_w, h=0.065, bg=bg, fg=fg)
 
         def start_game():
+            active_bank = self._active_word_bank()
             if not self.selected_categories:
-                self.selected_categories = set(self.word_bank.keys())
+                self.selected_categories = set(active_bank.keys()) if active_bank else set(self.word_bank.keys())
+            self.selector.bank = active_bank
             self.selector.set_categories(list(self.selected_categories))
             self.scores = [0 for _ in range(self.num_teams)]
             self.turn_index = 0
@@ -1116,8 +1184,10 @@ class CharadesApp:
                      w=b_w, h=b_h, bg=bg, fg=fg, text_scale=0.85)
 
         def start_game():
+            active_bank = self._active_word_bank()
             if not self.selected_categories:
-                self.selected_categories = set(self.word_bank.keys())
+                self.selected_categories = set(active_bank.keys()) if active_bank else set(self.word_bank.keys())
+            self.selector.bank = active_bank
             self.selector.set_categories(list(self.selected_categories))
             self.scores = [0 for _ in range(self.num_teams)]
             self.turn_index = 0
@@ -1345,7 +1415,7 @@ class CharadesApp:
         if self.phase == self.PHASE_REVEAL:
             self.current_word = self.selector.next_word()
             self.word_text.text = self.current_word
-            self.message_text.text = " " #"3... 2... 1... Go!"
+            self.message_text.text = " "  # "3... 2... 1... Go!"
             set_visible(self.btn_word_action, False)
             self.start_countdown(3)
             return
