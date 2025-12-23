@@ -416,6 +416,81 @@ class CharadesApp:
         self.pass_penalty = 0
         self.auto_next_word = True
 
+        # Language
+        self.language = 'en'  # 'en' or 'de'
+        self._de = {
+            "Pantomime / Charades (2D)": "Pantomime / Scharaden (2D)",
+
+            "Play": "Spielen",
+            "Settings": "Einstellungen",
+            "How To Play": "Spielanleitung",
+            "Quit": "Beenden",
+            "Back": "Zurück",
+
+            "Pass penalty: OFF (0)": "Pass-Strafe: AUS (0)",
+            "Pass penalty: ON (-1)": "Pass-Strafe: AN (-1)",
+            "Auto-next word: ON": "Auto-nächstes Wort: AN",
+            "Auto-next word: OFF": "Auto-nächstes Wort: AUS",
+
+            "Round time": "Rundenzeit",
+            "Rounds / team": "Runden / Team",
+            "Categories (multi-select)": "Kategorien (Mehrfachauswahl)",
+            "Categories": "Kategorien",
+            "Start Game": "Spiel starten",
+
+            "(Word hidden)": "(Wort versteckt)",
+
+            ".Only the actor should see\n.Tap Reveal Word":
+                ".Nur der Darsteller darf sehen\n.Tippe auf Wort zeigen",
+            ".Tap Reveal Word when only the actor can see":
+                ".Tippe auf Wort zeigen, wenn nur der Darsteller es sehen kann",
+
+            "Reveal Word": "Wort zeigen",
+            "Correct (+1)": "Richtig (+1)",
+            "End Round": "Runde beenden",
+
+            "SCORES": "PUNKTE",
+
+            "Paused": "Pausiert",
+            "Resume": "Weiter",
+            "Back to Menu": "Zurück zum Menü",
+
+            "Correct! +1": "Richtig! +1",
+            "(Tap Next Word)": "(Tippe Nächstes Wort)",
+            "Next Word": "Nächstes Wort",
+            "Pass": "Passen",
+            "Pass (-1)": "Passen (-1)",
+
+            "Round Summary": "Rundenübersicht",
+            "Next Turn": "Nächster Zug",
+            "Menu": "Menü",
+
+            "Final Results": "Endergebnis",
+            "Restart": "Neu starten",
+
+            "Timer backend failed — use End Round.":
+                "Timer-Backend fehlgeschlagen — nutze Runde beenden.",
+
+            ".Browser: close the tab to quit\n.Desktop: close the window to quit":
+                ".Browser: Tab schließen zum Beenden\n.Desktop: Fenster schließen zum Beenden",
+
+            # Keep the ursina_css ".Line ..." format exactly
+            ".One player acts the word silently •\n"
+            ".Teammates guess •\n"
+            ".Tap Reveal Word → 3…2…1 → timer starts •\n"
+            ".Correct = +1 point •\n"
+            ".Pass = 0 or -1 (Settings) •\n"
+            ".End Round ends early •\n"
+            ".Teams rotate turns. Highest score wins •":
+                ".Ein Spieler stellt das Wort stumm dar •\n"
+                ".Teamkollegen raten •\n"
+                ".Tippe auf Wort zeigen → 3…2…1 → Timer startet •\n"
+                ".Richtig = +1 Punkt •\n"
+                ".Passen = 0 oder -1 (Einstellungen) •\n"
+                ".Runde beenden beendet früh •\n"
+                ".Teams wechseln sich ab. Höchste Punktzahl gewinnt •",
+        }
+
         # Setup defaults
         self.num_teams = 2
         self.round_duration = 60
@@ -485,6 +560,44 @@ class CharadesApp:
             return float(self.layout.text_factor)
         except Exception:
             return 1.0
+
+    def _tr(self, text):
+        # Always return a string when possible
+        try:
+            s = str(text)
+        except Exception:
+            return text
+
+        if getattr(self, 'language', 'en') != 'de':
+            return s
+
+        d = getattr(self, '_de', None)
+        if isinstance(d, dict) and s in d:
+            return d[s]
+
+        # Dynamic/pattern translations
+        if s.startswith("Timer backend: "):
+            return "Timer-Backend: " + s[len("Timer backend: "):]
+
+        if s.startswith("Winner: "):
+            return s.replace("Winner: ", "Sieger: ", 1)
+
+        if s.startswith("Tie: "):
+            return s.replace("Tie: ", "Unentschieden: ", 1)
+
+        if s.startswith("Team ") and " gained: " in s:
+            return s.replace(" gained: ", " erhielt: ", 1)
+
+        if s.startswith("Pass ("):
+            return "Passen" + s[len("Pass"):]
+
+        if " • " in s and "Round" in s:
+            return s.replace("Round", "Runde")
+
+        if s.startswith("Startup error:"):
+            return s.replace("Startup error:", "Startfehler:", 1)
+
+        return s
 
     def _make_word_bank(self):
         return {
@@ -575,7 +688,7 @@ class CharadesApp:
             parent = self.ui_root if self.ui_root is not None else self.root
 
         tf = self._tf()
-        t0 = Text(parent=parent, text=t)
+        t0 = Text(parent=parent, text=self._tr(t))
         safe_setattr(t0, 'x', x)
         safe_setattr(t0, 'y', y)
         safe_setattr(t0, 'scale', s * tf)
@@ -587,7 +700,7 @@ class CharadesApp:
         if parent is None:
             parent = self.ui_root if self.ui_root is not None else self.root
 
-        b = Button(parent=parent, text=label)
+        b = Button(parent=parent, text=self._tr(label))
         safe_setattr(b, 'model', 'quad')
         safe_setattr(b, 'x', x)
         safe_setattr(b, 'y', y)
@@ -661,7 +774,7 @@ class CharadesApp:
 
         self._round_interval = self.scheduler.set_interval(self._timer_tick, 1.0)
         if self._round_interval is None:
-            self.message_text.text = "Timer backend failed — use End Round."
+            self.message_text.text = self._tr("Timer backend failed — use End Round.")
             safe_setattr(self.message_text, 'color', self.C_WARN)
 
     def _timer_tick(self):
@@ -684,7 +797,7 @@ class CharadesApp:
     def flash(self, msg, c):
         if self.message_text is None:
             return
-        self.message_text.text = msg
+        self.message_text.text = self._tr(msg)
         safe_setattr(self.message_text, 'color', c)
 
         self.scheduler.clear_timeout(self._flash_timeout)
@@ -768,6 +881,14 @@ class CharadesApp:
         self.btn(auto_label, 0, -0.08, toggle_auto, w=0.90, h=0.11,
                  bg=self.C_PRIMARY if self.auto_next_word else self.C_BTN_DARK,
                  fg=BLACK if self.auto_next_word else WHITE)
+
+        def toggle_lang():
+            self.language = 'de' if self.language != 'de' else 'en'
+            self.go(self.STATE_SETTINGS)
+
+        lang_label = "Deutsch" if self.language != 'de' else "English"
+        self.btn(lang_label, 0, -0.16, toggle_lang, w=0.90, h=0.11,
+                 bg=self.C_BTN_DARK, fg=WHITE)
 
         self.btn("Back", 0, -0.28, lambda: self.go(self.STATE_MENU), bg=self.C_BTN_DARK, fg=WHITE)
 
@@ -1264,9 +1385,9 @@ class CharadesApp:
             set_visible(self.btn_word_action, False)
         else:
             self.current_word = self.selector.next_word()
-            self.word_text.text = "(Tap Next Word)"
+            self.word_text.text = self._tr("(Tap Next Word)")
             self.waiting_for_next = True
-            self.btn_word_action.text = "Next Word"
+            self.btn_word_action.text = self._tr("Next Word")
             style_button(self.btn_word_action, self.C_PRIMARY, BLACK)
             set_visible(self.btn_word_action, True)
 
