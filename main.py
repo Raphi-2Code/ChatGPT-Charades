@@ -499,7 +499,11 @@ class CharadesApp:
         # Word bank
         self.word_bank = self._make_word_bank()
         self.word_bank_de = self._make_word_bank_de()
-        self.selected_categories = set(self.word_bank.keys())
+
+        # Category filter:
+        # empty set means "ALL categories"
+        self.selected_categories = set()
+
         self.selector = WordSelector(self.word_bank)
         self.selector.set_categories(list(self.selected_categories))
 
@@ -1036,7 +1040,7 @@ class CharadesApp:
             "Actions": hsv(180, 0.70, 0.95),
         }
 
-        cats = list(self.word_bank.keys())
+        cats = list(self._active_word_bank().keys())
         start_y = -0.16
         dy = 0.07
 
@@ -1048,26 +1052,38 @@ class CharadesApp:
         x_right = l.right - btn_w / 2.0
 
         def toggle_cat(name):
-            if name in self.selected_categories:
-                self.selected_categories.remove(name)
+            # empty selection means ALL categories are active
+            if not self.selected_categories:
+                # first click turns on "filter mode" with only this category
+                self.selected_categories = {name}
             else:
-                self.selected_categories.add(name)
+                # normal toggle mode
+                if name in self.selected_categories:
+                    self.selected_categories.remove(name)
+                else:
+                    self.selected_categories.add(name)
             self.go(self.STATE_SETUP)
 
         for i, name in enumerate(cats):
             x = x_left if (i % 2 == 0) else x_right
             y = start_y - (i // 2) * dy
-            on = name in self.selected_categories
+            on = (not self.selected_categories) or (name in self.selected_categories)
             bg = cat_colors.get(name, self.C_PRIMARY) if on else self.C_BTN_DARK
             fg = BLACK if on else WHITE
             self.btn(name, x, y, on_click=lambda n=name: toggle_cat(n), w=btn_w, h=0.065, bg=bg, fg=fg)
 
         def start_game():
             active_bank = self._active_word_bank()
-            if not self.selected_categories:
-                self.selected_categories = set(active_bank.keys()) if active_bank else set(self.word_bank.keys())
-            self.selector.bank = active_bank
-            self.selector.set_categories(list(self.selected_categories))
+            self.selector.bank = active_bank if active_bank else self.word_bank
+
+            if self.selected_categories:
+                cats_to_use = [c for c in self.selected_categories if c in self.selector.bank]
+                if not cats_to_use:
+                    cats_to_use = list(self.selector.bank.keys())
+            else:
+                cats_to_use = list(self.selector.bank.keys())
+
+            self.selector.set_categories(cats_to_use)
             self.scores = [0 for _ in range(self.num_teams)]
             self.turn_index = 0
             self.go(self.STATE_GAMEPLAY)
@@ -1142,7 +1158,7 @@ class CharadesApp:
             "Professions": "Jobs",
         }
 
-        cats = list(self.word_bank.keys())
+        cats = list(self._active_word_bank().keys())
 
         cols = 4
         gap = 0.02
@@ -1163,10 +1179,14 @@ class CharadesApp:
         x_cols = [x0 + i * (b_w + gap) for i in range(cols)]
 
         def toggle_cat(name):
-            if name in self.selected_categories:
-                self.selected_categories.remove(name)
+            # empty selection means ALL categories are active
+            if not self.selected_categories:
+                self.selected_categories = {name}
             else:
-                self.selected_categories.add(name)
+                if name in self.selected_categories:
+                    self.selected_categories.remove(name)
+                else:
+                    self.selected_categories.add(name)
             self.go(self.STATE_SETUP)
 
         for i, name in enumerate(cats):
@@ -1175,7 +1195,7 @@ class CharadesApp:
             x = x_cols[col]
             y = start_y - row * dy
 
-            on = name in self.selected_categories
+            on = (not self.selected_categories) or (name in self.selected_categories)
             bg = cat_colors.get(name, self.C_PRIMARY) if on else self.C_BTN_DARK
             fg = BLACK if on else WHITE
             label = disp.get(name, name)
@@ -1185,10 +1205,16 @@ class CharadesApp:
 
         def start_game():
             active_bank = self._active_word_bank()
-            if not self.selected_categories:
-                self.selected_categories = set(active_bank.keys()) if active_bank else set(self.word_bank.keys())
-            self.selector.bank = active_bank
-            self.selector.set_categories(list(self.selected_categories))
+            self.selector.bank = active_bank if active_bank else self.word_bank
+
+            if self.selected_categories:
+                cats_to_use = [c for c in self.selected_categories if c in self.selector.bank]
+                if not cats_to_use:
+                    cats_to_use = list(self.selector.bank.keys())
+            else:
+                cats_to_use = list(self.selector.bank.keys())
+
+            self.selector.set_categories(cats_to_use)
             self.scores = [0 for _ in range(self.num_teams)]
             self.turn_index = 0
             self.go(self.STATE_GAMEPLAY)
